@@ -81,7 +81,7 @@ class Hypothese_child(QMainWindow, Hypothese) :
         super().__init__()
         self.setupUi(self)
         self.sparent = sparent
-        self.pchild = None
+        self.flag = False
         self.pchild_list = {}
         self.pushButton.clicked.connect(self._back_symptom)
         
@@ -99,20 +99,26 @@ class Hypothese_child(QMainWindow, Hypothese) :
             self.displayUi = self.pchild_list[button]
             self.hide()
             self.displayUi.show()
+        self.flag=True 
     
 
     
     @pyqtSlot()
     def _addRow(self) :
-        row = self.tableWidget.rowCount()
-        super()._addRow()
-        self.pchild_list[self.bl[row]] = Protocole_child(self)
+        row = self.tableWidget.rowCount()   
         if (row<=0) :
+            super()._addRow()
+            self.pchild_list[self.bl[row]] = Protocole_child(self)
             self.bl[0].clicked.connect(self._go_protocole)
+            self.flag = False
         else : 
-            self.bl[row].clicked.connect(self._go_protocole)
-        button =self.sender()
-        print(button)
+            if(self.flag) :
+                super()._addRow()
+                self.pchild_list[self.bl[row]] = Protocole_child(self)
+                self.bl[row].clicked.connect(self._go_protocole)
+                self.flag = False
+            
+    
 
 
             

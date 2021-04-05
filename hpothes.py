@@ -104,11 +104,14 @@ class Hypothese(object):
 
     def _removeRow(self):
         current = self.tableWidget.currentRow()
+        row = self.tableWidget.rowCount()
         if (current==-1) :
-            if self.tableWidget.rowCount() > 0:
-                self.tableWidget.removeRow(self.tableWidget.rowCount()-1)
+            if  row > 0:
+                self.tableWidget.removeRow(row-1)
+                self.bl.pop(row-1)
         else :
             self.tableWidget.removeRow(current) 
+            self.bl.pop(current)
 
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate

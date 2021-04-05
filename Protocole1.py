@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'hpothes.ui'
+# Form implementation generated from reading ui file 'Protocole.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.4
 #
@@ -11,16 +11,16 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
-class Protocole(object):
+class Ui_Form(object):
     def setupUi(self, Form):
         Form.setObjectName("Form")
-        Form.resize(1277, 730)
+        Form.resize(1277, 738)
         Form.setStyleSheet("")
         self.pushButton = QtWidgets.QPushButton(Form)
-        self.pushButton.setGeometry(QtCore.QRect(10, 680, 151, 38))
+        self.pushButton.setGeometry(QtCore.QRect(10, 650, 151, 28))
         self.pushButton.setObjectName("pushButton")
         self.pushButton_2 = QtWidgets.QPushButton(Form)
-        self.pushButton_2.setGeometry(QtCore.QRect(1080, 680, 151, 38))
+        self.pushButton_2.setGeometry(QtCore.QRect(1100, 640, 151, 28))
         self.pushButton_2.setObjectName("pushButton_2")
         self.label_8 = QtWidgets.QLabel(Form)
         self.label_8.setGeometry(QtCore.QRect(0, 0, 1281, 91))
@@ -36,7 +36,7 @@ class Protocole(object):
         self.label.setGeometry(QtCore.QRect(30, 110, 531, 41))
         self.label.setObjectName("label")
         self.tableWidget = QtWidgets.QTableWidget(Form)
-        self.tableWidget.setGeometry(QtCore.QRect(60, 190, 1011, 400))
+        self.tableWidget.setGeometry(QtCore.QRect(60, 190, 1011, 192))
         self.tableWidget.setObjectName("tableWidget")
         self.tableWidget.setColumnCount(5)
         self.tableWidget.setRowCount(0)
@@ -76,45 +76,9 @@ class Protocole(object):
         font.setPointSize(10)
         item.setFont(font)
         self.tableWidget.setHorizontalHeaderItem(4, item)
-        self.tableWidget.horizontalHeader().setDefaultSectionSize(205)
-        self.tableWidget.setColumnWidth(3, 320)
-        self.tableWidget.setColumnWidth(2, 110)
-        self.tableWidget.setColumnWidth(1, 110)
-        self.tableWidget.setColumnWidth(0, 250)
-        self.tableWidget.setColumnWidth(4, 150)
-        self.pushButton_3.clicked.connect(self._addRow)
-        self.pushButton_4.clicked.connect(self._removeRow)
-        f = open ("button.css","r")
-        cssb = f.read()
-        f.close()
-        self.pushButton.setStyleSheet(cssb)
-        self.pushButton_2.setStyleSheet(cssb)
+
         self.retranslateUi(Form)
         QtCore.QMetaObject.connectSlotsByName(Form)
-    
-
-    def _addRow(self) :
-        rowCount = self.tableWidget.rowCount()
-        self.tableWidget.insertRow(rowCount )
-        combo =  QtWidgets.QComboBox()
-        button = QtWidgets.QPushButton()
-        combo.addItem('Vrai')
-        combo.addItem('Faux')
-        combo2 = QtWidgets.QComboBox()
-        combo2.addItem('Haut niveau')
-        combo2.addItem('Bas niveau')
-        self.tableWidget.setCellWidget(rowCount, 2, combo)
-        self.tableWidget.setCellWidget(rowCount, 1, combo2)
-        button.setText("Editer Actions")
-        self.tableWidget.setCellWidget(rowCount, 4, button)
-        
-    def _removeRow(self):
-        current = self.tableWidget.currentRow()
-        if (current==-1) :
-            if self.tableWidget.rowCount() > 0:
-                self.tableWidget.removeRow(self.tableWidget.rowCount()-1)
-        else :
-            self.tableWidget.removeRow(current) 
 
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
