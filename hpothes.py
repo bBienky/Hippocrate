@@ -80,6 +80,7 @@ class Hypothese(object):
         self.tableWidget.setColumnWidth(0, 250)
         self.pushButton_3.clicked.connect(self._addRow)
         self.pushButton_4.clicked.connect(self._removeRow)
+        self.bl = []
         f = open ("button.css","r")
         cssb = f.read()
         f.close()
@@ -99,6 +100,7 @@ class Hypothese(object):
         self.tableWidget.setCellWidget(rowCount, 1, combo)
         button.setText("Protocoles")
         self.tableWidget.setCellWidget(rowCount, 3, button)
+        self.bl.append(button)
 
     def _removeRow(self):
         current = self.tableWidget.currentRow()

@@ -6,6 +6,8 @@ from smp import Add_symptom
 from PyQt5.QtCore import pyqtSlot
 from hpothes import Hypothese
 from Protocole import Protocole
+from PyQt5.QtWidgets import QTableWidget,QTableWidgetItem
+
 
 class Menuprincipal_child(QMainWindow, Menupricipal):
     def __init__(self):
@@ -79,7 +81,10 @@ class Hypothese_child(QMainWindow, Hypothese) :
         super().__init__()
         self.setupUi(self)
         self.sparent = sparent
+        self.pchild = None
+        self.pchild_list = {}
         self.pushButton.clicked.connect(self._back_symptom)
+        
     @pyqtSlot()
     def _back_symptom(self):
         self.displayUi = self.sparent
@@ -88,16 +93,45 @@ class Hypothese_child(QMainWindow, Hypothese) :
     
     @pyqtSlot()
     def _go_protocole(self) :
+        button = self.sender()
+        index = self.tableWidget.indexAt(button.pos())
+        if index.isValid():       
+            self.displayUi = self.pchild_list[button]
+            self.hide()
+            self.displayUi.show()
+    
+
+    
+    @pyqtSlot()
+    def _addRow(self) :
         row = self.tableWidget.rowCount()
-        col = 3
-        for i in range(row):
-            item = 
+        super()._addRow()
+        self.pchild_list[self.bl[row]] = Protocole_child(self)
+        if (row<=0) :
+            self.bl[0].clicked.connect(self._go_protocole)
+        else : 
+            self.bl[row].clicked.connect(self._go_protocole)
+        button =self.sender()
+        print(button)
+
+
+            
+        
 
 class Protocole_child(QMainWindow, Protocole) :
     def __init__(self, hparent):
         super().__init__()
         self.setupUi(self)
         self.hparent = hparent
+        self.pushButton.clicked.connect(self._back_hp)
+    
+    def _back_hp(self) :
+        self.displayUi = self.hparent
+        self.hparent = self.hparent
+        self.hide()
+        self.displayUi.show()
+
+
     
 
 
@@ -107,11 +141,11 @@ if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     Form =QMainWindow()
     app.setStyle(QtWidgets.QStyleFactory.create('Fusion'))
-    #ui1 = Addcase_child()
-    #ui2 = Addsymptom_child(ui1)
-    #ui3 = Hypothese_child(ui2)
-    ui = Protocole()
-    Form.setWindowFlags(QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowMinimizeButtonHint)
-    ui.setupUi(Form)
-    Form.show()
+    ui1 = Addcase_child()
+    ui2 = Addsymptom_child(ui1)
+    ui3 = Hypothese_child(ui2)
+    #ui = Protocole()
+    ui1.setWindowFlags(QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowMinimizeButtonHint)
+    #ui.setupUi(Form)
+    ui3.show()
     sys.exit(app.exec_())
