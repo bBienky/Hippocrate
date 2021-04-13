@@ -82,9 +82,13 @@ class Addcase(object):
         self.label_7 = QtWidgets.QLabel(self.layoutWidget1)
         self.label_7.setStyleSheet("font: 8pt \"Poppins\";")
         self.label_7.setObjectName("label_7")
-        self.gridLayout_2.addWidget(self.label_7, 2, 0, 1, 1)
+        self.gridLayout_2.addWidget(self.label_7, 2, 0, 1, 1)     
         self.comboBox = QtWidgets.QComboBox(self.layoutWidget1)
+        self.comboBox.view().setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        l = [str(i+1) for i in range(100)]
+        self.comboBox.addItems(l)
         self.comboBox.setObjectName("comboBox")
+        self.comboBox.setStyleSheet("QComboBox {combobox-popup: 0;}")
         self.gridLayout_2.addWidget(self.comboBox, 2, 1, 1, 1)
 
         self.retranslateUi(Form)

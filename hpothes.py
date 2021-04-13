@@ -84,6 +84,8 @@ class Hypothese(object):
         f = open ("button.css","r")
         cssb = f.read()
         f.close()
+        self.save_hp = {}
+        self.save_hp2 = {}
         self.pushButton.setStyleSheet(cssb)
         self.pushButton_2.setStyleSheet(cssb)
         self.retranslateUi(Form)
@@ -105,19 +107,30 @@ class Hypothese(object):
     def _removeRow(self):
         current = self.tableWidget.currentRow()
         row = self.tableWidget.rowCount()
+        print(self.save_hp)
         if (current==-1) :
             if  row > 0:
                 self.tableWidget.removeRow(row-1)
+                if(self.bl[row-1] in self.save_hp.keys()) :
+                    del self.save_hp[self.bl[row-1]]
+                if(self.bl[row-1] in self.save_hp2.keys()) :
+                    del self.save_hp2[self.bl[row-1]]
                 self.bl.pop(row-1)
         else :
-            self.tableWidget.removeRow(current) 
+            self.tableWidget.removeRow(current)
+            if self.bl[current] in self.save_hp.keys():
+                del self.save_hp[self.bl[current]]
+            if self.bl[current] in self.save_hp2.keys():
+                del self.save_hp2[self.bl[current]]
             self.bl.pop(current)
+
+           
 
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
         Form.setWindowTitle(_translate("Form", "Form"))
         self.pushButton.setText(_translate("Form", "Retour"))
-        self.pushButton_2.setText(_translate("Form", "Enregistrer"))
+        self.pushButton_2.setText(_translate("Form", "Sauvegarder le cas"))
         self.label_8.setText(_translate("Form", "<html><head/><body><p align=\"center\"><span style=\" font-size:20pt; font-weight:600; color:#ffffff;\">EDITEUR DE CAS MEDICAUX HIPPOCRATE</span></p></body></html>"))
         self.pushButton_3.setText(_translate("Form", "Ajouter une hypothèse"))
         self.pushButton_4.setText(_translate("Form", "Supprimer une hypothèse"))

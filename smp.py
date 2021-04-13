@@ -10,6 +10,7 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtWidgets import QHeaderView
 
 class  Add_symptom(object):
@@ -114,7 +115,18 @@ class  Add_symptom(object):
     
     def _addRow(self):
         rowCount = self.tableWidget.rowCount()
-        self.tableWidget.insertRow(rowCount )
+        if (rowCount == 0):
+            self.tableWidget.insertRow(rowCount )
+        else :
+            item = self.tableWidget.item(rowCount-1, 0)
+            if(item is None) :
+                error_dialog = QMessageBox()
+                error_dialog.setIcon(QMessageBox.Critical)
+                error_dialog.setText("Veuillez terminer l'édition du symptôme précédent \n avant d'ajouter un nouveau")
+                error_dialog.exec_()
+            else :
+                self.tableWidget.insertRow(rowCount )
+
     def _removeRow(self):
         current = self.tableWidget.currentRow()
         if (current==-1) :
