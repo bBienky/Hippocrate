@@ -66,6 +66,7 @@ class Case(Base):
 class Uplet(Base):
     __tablename__ = 'uplet'
     id =  Column(Integer, primary_key =True)
+    u_veracity = Column(Boolean)
     protocol_id = Column(Integer, ForeignKey('protocols.id'))
     actor_id = Column(Integer, ForeignKey('actors.id'))
     action_all = relationship('Action')  

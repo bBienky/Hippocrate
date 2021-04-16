@@ -14,24 +14,111 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from mapping_class import *
 from help_func import *
+from modif_case import *
+
 engine = create_engine('sqlite:///hippocrate.db', echo=True)
 Session = sessionmaker(bind=engine)
 session = Session()
+
+
+class Modif_case_child(Modif_case, QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+        self.case_list = []
+        self.link_button ={}
+        self.blist = []
+        self.case_map ={}
+        self.pushButton_3.clicked.connect(self._back)
+    def _back(self):
+        self.displayUi = Menuprincipal_child()
+        self.hide()
+        self.displayUi.show()
+    def _load_page(self) :
+        n = len(self.case_list)
+        for i in range(n):
+            c = self.case_list[i]
+            info = c.name_patient +" - "+ str(c.age_patient) + " - "+ c.gender_patient
+            h = c.hypothesis_list
+            h = [e.name_hypothesis for e in h]
+            button = QtWidgets.QPushButton()
+            item = QTableWidgetItem(info)
+            item2 = QTableWidgetItem(transform(h))
+            button.setText("Modifier")
+            self.tableWidget.insertRow(i)
+            self.tableWidget.setCellWidget(i, 2, button)
+            self.tableWidget.setItem(i, 1, item)
+            self.tableWidget.setItem(i, 0, item2)
+            self.blist.append(button)
+            self.link_button[button] = Addcase_child()
+            self.case_map[button] = c
+            self.blist[i].clicked.connect(self._go_case)
+
+
+    def load_case_editor(self):
+        for i in range(len(self.blist)):
+            button = self.blist[i]
+            interface = self.link_button[button]
+            case = self.case_list[i]
+            if (case.type_case =='Urgence'):
+                interface.radioButton.setChecked(True)
+            if (case.type_case =='Normal') :
+                interface.radioButton_2.setChecked(True)
+            if (case.gender_patient =='Homme'):
+                interface.radioButton_3.setChecked(True)
+            if (case.type_case =='Femme') :
+                interface.radioButton_4.setChecked(True)
+            interface.lineEdit.setText(case.name_patient)
+            interface.comboBox.setCurrentIndex(case.age_patient)
+            interface.textEdit.setPlainText(case.desc_case)
+          
+
+    @pyqtSlot()
+    def _go_case (self) :
+        button = self.sender()
+        print(button)
+        self.displayUi = self.link_button[button]
+        interface = self.link_button[button]
+        interface.child = Addsymptom_child(interface, load_h=self.case_map[button].hypothesis_list)
+        interface.child.flag =  True
+        interface.child.child = Hypothese_child(interface.child)
+        interface.child.fulltable(self.case_map[button].symptoms)
+        self.hide()
+        self.displayUi.show()
+
+
+
+
 
 
 class Menuprincipal_child(QMainWindow, Menupricipal):
     def __init__(self):
         super().__init__()
         self.addcase = Addcase_child()
+        self.modifcase = Modif_case_child()
         self.setupUi(self)
-        self.pushButton.clicked.connect(self.click_addcase)
+        self.pushButton.clicked.connect(self._click_addcase)
+        self.pushButton_2.clicked.connect(self._click_modif_case)
     
-    def click_addcase(self):
+    @pyqtSlot()
+    def _click_addcase(self):
         if self.addcase.isVisible():
             self.addcase.hide()
         else :
             self.hide()
             self.addcase.show()
+    @pyqtSlot()
+    def _click_modif_case(self):
+        case_result = session.query(Case).all()
+        self.modifcase.case_list = case_result
+        self.modifcase._load_page()
+        self.modifcase.load_case_editor()
+        if self.modifcase.isVisible():
+            self.modifcase.hide()
+        else :
+            self.hide()
+            self.modifcase.show()
+
 
 class Addcase_child(QMainWindow, Addcase):
     def __init__(self):
@@ -62,11 +149,11 @@ class Addcase_child(QMainWindow, Addcase):
             if (b1.isChecked()) :
                 b11 = b1.text()
             if (b2.isChecked()) :
-                b11 = b1.text()
+                b11 = b2.text()
             if (b3.isChecked()) :
-                b22 = b1.text()
+                b22 = b3.text()
             if (b4.isChecked()) :
-                b22 = b1.text()
+                b22 = b3.text()
             self.save_case = Case(name_patient = name_patient, age_patient =age, gender_patient = b22, type_case =b11, desc_case= descr )
             if(self.child is None) :
                 self.child =Addsymptom_child(self)
@@ -80,12 +167,15 @@ class Addcase_child(QMainWindow, Addcase):
             error_dialog.setIcon(QMessageBox.Critical)
             error_dialog.setText("Remplissez tous les champs d Mettez N/A si non existant pour la description")
             error_dialog.exec_()
+
 class Addsymptom_child(QMainWindow, Add_symptom):
-    def __init__(self, parent):
+    def __init__(self, parent, load_h = None):
         super().__init__()
         self.setupUi(self)
         self.parent = parent
         self.child = None
+        self.flag = False
+        self.load_h = load_h
         self.error_dialog = QMessageBox()
         self.pushButton_3.clicked.connect(self._addRow)
         self.pushButton_4.clicked.connect(self._removeRow)
@@ -98,8 +188,22 @@ class Addsymptom_child(QMainWindow, Add_symptom):
         self.hide()
         self.displayUi.show()
     
+    def fulltable(self, mtable) :
+        for i in range(len(mtable)):
+            row = mtable[i]
+            self.tableWidget.insertRow(i)
+            item1, item2, item3, item4 = QTableWidgetItem(row.name_symptom), QTableWidgetItem(row.type_symptom), QTableWidgetItem(row.desc_symptom), QTableWidgetItem(row.val_symptom)
+            self.tableWidget.setItem(i, 0, item1)
+            self.tableWidget.setItem(i, 1, item2)
+            self.tableWidget.setItem(i, 2, item3)
+            self.tableWidget.setItem(i, 3, item4)
+
+    
     @pyqtSlot()
     def _go_hypothese(self):
+        if(self.flag) :
+            self.child.fullhtable(self.load_h)
+            self.flag = False
         row = self.tableWidget.rowCount()
         if row == 0:
             self.error_dialog.setIcon(QMessageBox.Critical)
@@ -158,6 +262,29 @@ class Hypothese_child(QMainWindow, Hypothese) :
                 case.hypothesis_list = hp_list
                 session.add(case)
                 session.commit()
+                self.displayUi = Menuprincipal_child()
+                self.hide()
+                self.displayUi.show()
+
+    def fullhtable(self, htable = None):
+        if (htable is not None):
+            self.pushButton_2.setText('Mettre à jour')
+            for i in range(len(htable)) :
+                row = htable[i]
+                self.tableWidget.insertRow(i)
+                item1, item2, item3 = QTableWidgetItem(row.name_hypothesis),  QtWidgets.QComboBox(), QTableWidgetItem(row.desc_hypothesis)
+                item4 = QtWidgets.QPushButton()
+                item2.addItem("Faux")
+                item2.addItem("Vrai")
+                item2.setCurrentText(detransform(row.true_false_hypothesis))
+                item4.setText('Protocoles')
+                self.bl.append(item4)
+                self.tableWidget.setItem(i, 0, item1)
+                self.tableWidget.setCellWidget(i, 1, item2)
+                self.tableWidget.setItem(i, 2, item3)
+                self.tableWidget.setCellWidget(i, 3, item4)
+                self.pchild_list[self.bl[i]] = Protocole_child(self, self.bl[i])
+                self.bl[i].clicked.connect(self._go_protocole)
 
     @pyqtSlot()
     def _back_symptom(self):
@@ -212,6 +339,7 @@ class Protocole_child(QMainWindow, Protocole) :
         self.error_dialog = QMessageBox()
         self.pushButton_2.clicked.connect(self._save_protocols)
 
+    def pfulltable (self, ptable =None)
     @pyqtSlot()
     def _back_hp(self) :
         self.displayUi = self.hparent
@@ -406,6 +534,7 @@ class Action_child(Actions, QMainWindow) :
                 for val in act_all :
                     u = Uplet()
                     u.action_all = val[1]
+                    u.u_veracity = u_veracity_compute([e.true_false_action for e in val[1]])
                     temp = Actor(name = val[0][0], role_actor = val[0][1])
                     u.actors_all = temp
                     self.pparent.save_protocol[self.bcreate].actor_list.append(u)
@@ -436,7 +565,7 @@ if __name__ == "__main__":
     Form =QMainWindow()
     app.setStyle(QtWidgets.QStyleFactory.create('Fusion'))
     ui1 = Menuprincipal_child()
-    #ui = Boucle()
+    #ui = Modif_case()
     Form.setWindowFlags(QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowMinimizeButtonHint)
     ui1.setupUi(Form)
     ui1.show()

@@ -107,7 +107,6 @@ class Hypothese(object):
     def _removeRow(self):
         current = self.tableWidget.currentRow()
         row = self.tableWidget.rowCount()
-        print(self.save_hp)
         if (current==-1) :
             if  row > 0:
                 self.tableWidget.removeRow(row-1)
@@ -141,3 +140,7 @@ class Hypothese(object):
         item.setText(_translate("Form", "Vrai / Faux"))
         item = self.tableWidget.horizontalHeaderItem(2)
         item.setText(_translate("Form", "Description"))
+
+
+
+
