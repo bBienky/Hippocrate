@@ -75,14 +75,16 @@ class Modif_case_child(Modif_case, QMainWindow):
 
     @pyqtSlot()
     def _go_case (self) :
+        #declarations
         button = self.sender()
-        print(button)
+        hlist = self.case_map[button].hypothesis_list
         self.displayUi = self.link_button[button]
-        interface = self.link_button[button]
-        interface.child = Addsymptom_child(interface, load_h=self.case_map[button].hypothesis_list)
-        interface.child.flag =  True
-        interface.child.child = Hypothese_child(interface.child)
-        interface.child.fulltable(self.case_map[button].symptoms)
+        lcase = self.link_button[button]
+        lcase.child = Addsymptom_child(lcase, load_h=hlist)
+        lcase.child.flag =  True
+        lsmp = lcase.child
+        lsmp.fulltable(self.case_map[button].symptoms)    
+        lsmp.child = Hypothese_child(lsmp, flag = True)  
         self.hide()
         self.displayUi.show()
 
@@ -232,13 +234,15 @@ class Addsymptom_child(QMainWindow, Add_symptom):
 
 
 class Hypothese_child(QMainWindow, Hypothese) :
-    def __init__(self,sparent) :
+    def __init__(self,sparent, flag = False) :
         super().__init__()
         self.setupUi(self)
         self.sparent = sparent
         self.error_dialog =QMessageBox()
         self.pchild_list = {}
         self.counter = 0
+        self.load_p = {}
+        self.flag= flag
         self.pushButton.clicked.connect(self._back_symptom)
         self.pushButton_2.clicked.connect(self._save_case_final)
     
@@ -266,7 +270,7 @@ class Hypothese_child(QMainWindow, Hypothese) :
                 self.hide()
                 self.displayUi.show()
 
-    def fullhtable(self, htable = None):
+    def fullhtable(self, htable = None,  load_p = None):
         if (htable is not None):
             self.pushButton_2.setText('Mettre à jour')
             for i in range(len(htable)) :
@@ -284,6 +288,7 @@ class Hypothese_child(QMainWindow, Hypothese) :
                 self.tableWidget.setItem(i, 2, item3)
                 self.tableWidget.setCellWidget(i, 3, item4)
                 self.pchild_list[self.bl[i]] = Protocole_child(self, self.bl[i])
+                self.load_p[self.bl[i]] = htable[i].protocol_list
                 self.bl[i].clicked.connect(self._go_protocole)
 
     @pyqtSlot()
@@ -293,12 +298,15 @@ class Hypothese_child(QMainWindow, Hypothese) :
         self.displayUi.show()
     
     @pyqtSlot()
-    def _go_protocole(self) :
+    def _go_protocole(self) :            
         button = self.sender()
+        if (self.flag) :
+            self.pchild_list[button].fullptable(self.load_p[button])
+            self.flag = False
+
         index = self.tableWidget.indexAt(button.pos())
         n = index.row()
-        hcol1, hcol2, hcol3 = self.tableWidget.item(n, 0), self.tableWidget.cellWidget(n, 1), self.tableWidget.item(n, 2)
-        
+        hcol1, hcol2, hcol3 = self.tableWidget.item(n, 0), self.tableWidget.cellWidget(n, 1), self.tableWidget.item(n, 2)      
         if((hcol1 is None)|(hcol2 is None)|(hcol3 is None)):
             self.error_dialog.setIcon(QMessageBox.Critical)
             self.error_dialog.setText("Veuillez saisir tous les champs avant l'édition des protocoles")
@@ -339,7 +347,25 @@ class Protocole_child(QMainWindow, Protocole) :
         self.error_dialog = QMessageBox()
         self.pushButton_2.clicked.connect(self._save_protocols)
 
-    def pfulltable (self, ptable =None)
+    def fullptable (self, ptable =None): 
+        if (ptable is not None) :
+            for i in range(len(ptable)) :
+                row = ptable[i]
+                self.tableWidget.insertRow(i)
+                item1, item2, item3 = QTableWidgetItem(row.name_protocol),  QtWidgets.QComboBox(), QTableWidgetItem(row.desc_protocol)
+                item4 = QtWidgets.QPushButton()
+                item2.addItem("Urgence")
+                item2.addItem("Normal")
+                item2.setCurrentText(row.type_protocol)
+                item4.setText('Modifier Actions')
+                self.ba.append(item4)
+                self.tableWidget.setItem(i, 0, item1)
+                self.tableWidget.setCellWidget(i, 1, item2)
+                self.tableWidget.setItem(i, 2, item3)
+                self.tableWidget.setCellWidget(i, 3, item4)
+                self.action_list[self.ba[i]] = Action_child(self, self.ba[i])
+                self.ba[i].clicked.connect(self._go_action) 
+
     @pyqtSlot()
     def _back_hp(self) :
         self.displayUi = self.hparent
