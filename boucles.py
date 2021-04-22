@@ -72,8 +72,8 @@ class Boucle(object):
         self.tableWidget.setColumnWidth(2, 210)
         self.tableWidget.setColumnWidth(1, 210)
         self.tableWidget.setColumnWidth(0, 200)
-        self.pushButton_3.clicked.connect(self._removeRow)
-
+        self.boucle = []
+        self.list_boucle = []
         self.retranslateUi(Form)
         QtCore.QMetaObject.connectSlotsByName(Form)
 
@@ -82,8 +82,10 @@ class Boucle(object):
         row = self.tableWidget.rowCount()
         if (current==-1) :
             if  row > 0:
+                self.boucle.pop(row-1)
                 self.tableWidget.removeRow(row-1)
         else :
+            self.boucle.pop(current)
             self.tableWidget.removeRow(current) 
 
     def retranslateUi(self, Form):

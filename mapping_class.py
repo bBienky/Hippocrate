@@ -25,6 +25,8 @@ class Action (Base):
     true_false_action = Column(Boolean)
     precondition = Column(String(20), default = "N/A")
     uplet_id = Column(Integer, ForeignKey("uplet.id"))
+    boucle_id = Column(Integer, ForeignKey('boucle.id', ondelete="CASCADE"))
+
 
 class Protocol(Base):
     __tablename__ = 'protocols'
@@ -32,7 +34,7 @@ class Protocol(Base):
     name_protocol =Column(String(20))
     desc_protocol = Column(String(100))
     type_protocol = Column(String(10))   
-    actor_list = relationship("Uplet")
+    actor_list = relationship("Uplet", cascade="all,delete")
     hpothes_id = Column(Integer, ForeignKey("hypothesis.id"))
 
 
@@ -48,7 +50,7 @@ class Hypothesis(Base):
     name_hypothesis =  Column(String(20))
     desc_hypothesis =  Column(String(100))
     true_false_hypothesis = Column(Boolean)
-    protocol_list = relationship('Protocol')
+    protocol_list = relationship('Protocol', cascade="all,delete")
     case_id = Column(Integer, ForeignKey("cases.id"))
 
 
@@ -60,8 +62,8 @@ class Case(Base):
     gender_patient = Column(String(10))
     desc_case = Column(String(100))
     type_case = Column(String(20))
-    symptoms = relationship('Symptom')
-    hypothesis_list = relationship('Hypothesis')
+    symptoms = relationship('Symptom',cascade="all,delete")
+    hypothesis_list = relationship('Hypothesis', cascade="all,delete")
 
 class Uplet(Base):
     __tablename__ = 'uplet'
@@ -69,6 +71,12 @@ class Uplet(Base):
     u_veracity = Column(Boolean)
     protocol_id = Column(Integer, ForeignKey('protocols.id'))
     actor_id = Column(Integer, ForeignKey('actors.id'))
-    action_all = relationship('Action')  
+    action_all = relationship('Action', cascade = "all, delete")  
     actors_all = relationship("Actor")
+
+class Boucles(Base) :
+    __tablename__ = 'boucle'
+    id =  Column(Integer, primary_key = True)
+    nbiter = Column(String(4))
+    acts =  relationship('Action')
 Base.metadata.create_all(engine)

@@ -99,7 +99,6 @@ class Actions(object):
         self.tableWidget.setColumnWidth(1, 200)
         self.tableWidget.setColumnWidth(0, 160)
         self.pushButton_3.clicked.connect(self._add_action_row)
-        self.pushButton_5.clicked.connect(self._removeRow)
         self.tableWidget.resizeRowsToContents()
         self.retranslateUi(Form)
         QtCore.QMetaObject.connectSlotsByName(Form)
@@ -120,21 +119,11 @@ class Actions(object):
         css = "QComboBox {combobox-popup: 0;}"
         comboorder.addItems(l)
         comboorder.setStyleSheet(css)
-
         roles = ['Médécin', 'Infirmier', 'Ambulancier']
         self.tableWidget.setCellWidget(rowCount, 5, combo)
         self.tableWidget.setCellWidget(rowCount, 6, comboorder)
         combo4.addItems(roles)
         self.tableWidget.setCellWidget(rowCount,3, combo4)
-    
-    def _removeRow(self):
-        current = self.tableWidget.currentRow()
-        row = self.tableWidget.rowCount()
-        if (current==-1) :
-            if  row > 0:
-                self.tableWidget.removeRow(row-1)
-        else :
-            self.tableWidget.removeRow(current) 
 
 
     def retranslateUi(self, Form):
