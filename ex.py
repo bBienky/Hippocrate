@@ -328,9 +328,9 @@ class Addsymptom_child(QMainWindow, Add_symptom):
                                 Symptom.type_symptom : self.tableWidget.item(i, 2).text(), Symptom.val_symptom  : self.tableWidget.item(i,3).text()})
                             session.commit()
                         for j in range(self.updatelen, row):
-                            col1, col2, col3, col4 = self.tableWidget.item(j, 0), self.tableWidget.item(j, 1), self.tableWidget.item(j, 2), self.tableWidget.item(j, 3)
-                            s = Symptom(name_symptom = self.tableWidget.item(i,0).text(), desc_symptom= self.tableWidget.item(i,1).text(),
-                                                type_symptom = self.tableWidget.item(i, 2).text(), val_symptom =self.tableWidget.item(i,3).text())
+                            print(j)
+                            s = Symptom(name_symptom = self.tableWidget.item(j,0).text(), desc_symptom= self.tableWidget.item(j,1).text(),
+                                                type_symptom = self.tableWidget.item(j, 2).text(), val_symptom =self.tableWidget.item(j,3).text())
                             s.case_id = self.parent.save_case.id 
                             session.add(s)
                             session.commit()                    
