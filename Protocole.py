@@ -77,6 +77,9 @@ class Protocole(object):
         self.ba = []
         self.uplets = {}
         self.save_protocol = {}
+        self.prot_updateflag = True
+        self.prot_update = {}
+        self.numId = 0
         f = open ("button.css","r")
         cssb = f.read()
         f.close()
@@ -102,19 +105,29 @@ class Protocole(object):
         if (current==-1) :
             r = self.tableWidget.rowCount()
             if r > 0:
+                button = self.ba[r-1]
                 self.tableWidget.removeRow(r-1)
-                if (self.ba[r-1] in self.save_protocol.keys()):
-                    del self.save_protocol[self.ba[r-1]]
-                if (self.ba[r-1] in self.uplets.keys()):
-                    del self.uplets[self.ba[r-1]]
+                if (button in self.save_protocol.keys()):
+                    del self.save_protocol[button]
+                if (button in self.uplets.keys()):
+                    del self.uplets[button]
                 self.ba.pop(r-1)
+                if not self.prot_updateflag :
+                    if r<=self.numId :
+                        if button in self.prot_update.keys():
+                            self.prot_update[button][1] = "DELETE"
         else :
             self.tableWidget.removeRow(current) 
-            if(self.ba[current] in self.save_protocol) :
-                del self.save_protocol[self.ba[current]]
-            if (self.ba[current] in self.uplets.keys()):
-                del self.uplets[self.ba[current]]
+            button = self.ba[current]
+            if( button in self.save_protocol) :
+                del self.save_protocol[button]
+            if (button in self.uplets.keys()):
+                del self.uplets[button]
             self.ba.pop(current)
+            if not self.prot_updateflag :
+                if button in self.prot_update.keys():
+                    if current <self.numId :
+                        self.prot_update[button][1] = "DELETE"
 
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate

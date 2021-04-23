@@ -86,6 +86,7 @@ class Hypothese(object):
         f.close()
         self.save_hp = {}
         self.save_hp2 = {}
+        self.hupdate ={}
         self.pushButton.setStyleSheet(cssb)
         self.pushButton_2.setStyleSheet(cssb)
         self.retranslateUi(Form)
@@ -111,14 +112,20 @@ class Hypothese(object):
             if  row > 0:
                 self.tableWidget.removeRow(row-1)
                 if(self.bl[row-1] in self.save_hp.keys()) :
-                    del self.save_hp[self.bl[row-1]]
+                    if self.bl[row-1] in self.hupdate.keys():
+                        self.hupdate[self.bl[row-1]][1] = "DELETE"
+                    else :
+                        del self.save_hp[self.bl[row-1]]
                 if(self.bl[row-1] in self.save_hp2.keys()) :
                     del self.save_hp2[self.bl[row-1]]
                 self.bl.pop(row-1)
         else :
             self.tableWidget.removeRow(current)
             if self.bl[current] in self.save_hp.keys():
-                del self.save_hp[self.bl[current]]
+                if self.bl[current] in self.hupdate.keys():
+                    self.hupdate[self.bl[current]][1] = "DELETE"
+                else :
+                    del self.save_hp[self.bl[current]]
             if self.bl[current] in self.save_hp2.keys():
                 del self.save_hp2[self.bl[current]]
             self.bl.pop(current)

@@ -16,8 +16,7 @@ from mapping_class import *
 from help_func import *
 from modif_case import *
 from sqlalchemy.pool import NullPool
-engine = create_engine('sqlite:///hippocrate.db')
-session = None
+engine = create_engine('sqlite:///hippocrate.db', poolclass=NullPool)
 
 class model :
     def __init__(self, eng):
@@ -25,7 +24,8 @@ class model :
         self.session  = None
     def create_session(self) :
         self.engine.dispose()
-        Session = sessionmaker(bind=self.engine)
+        Session = sessionmaker()
+        Session.configure(bind=self.engine)
         self.session = Session()
         return self.session
 
@@ -44,6 +44,7 @@ class Modif_case_child(Modif_case, QMainWindow):
         self.hide()
         self.displayUi.show()
         self.session.close()
+    @pyqtSlot()    
     def _load_page(self) :
         n = len(self.case_list)
         for i in range(n):
@@ -76,10 +77,10 @@ class Modif_case_child(Modif_case, QMainWindow):
                 interface.radioButton_2.setChecked(True)
             if (case.gender_patient =='Homme'):
                 interface.radioButton_3.setChecked(True)
-            if (case.type_case =='Femme') :
+            if (case.gender_patient =='Femme') :
                 interface.radioButton_4.setChecked(True)
             interface.lineEdit.setText(case.name_patient)
-            interface.comboBox.setCurrentIndex(case.age_patient)
+            interface.comboBox.setCurrentIndex(case.age_patient-1)
             interface.textEdit.setPlainText(case.desc_case)
           
 
@@ -90,10 +91,13 @@ class Modif_case_child(Modif_case, QMainWindow):
         hlist = self.case_map[button].hypothesis_list
         self.displayUi = self.link_button[button]
         lcase = self.link_button[button]
+        lcase.save_case = self.case_map[button]
         lcase.child = Addsymptom_child(lcase, load_h=hlist)
         lcase.child.flag =  True
         lsmp = lcase.child
-        lsmp.fulltable(self.case_map[button].symptoms)    
+        lsmp.fulltable(self.case_map[button].symptoms) 
+        lsmp.updateID = [s.id for s in self.case_map[button].symptoms]
+        lsmp.updatelen = len(self.case_map[button].symptoms)   
         lsmp.child = Hypothese_child(lsmp, flag = True)  
         lsmp.child.updateflag = False
         lsmp.child.id_tosave = self.case_map[button].id
@@ -197,9 +201,11 @@ class Addcase_child(QMainWindow, Addcase):
         self.setupUi(self)
         self.child = None
         self.save_case = None
+        self.infos =[]
         self.pushButton.clicked.connect(self._back_menu)
         self.pushButton_2.clicked.connect(self._go_symptom)
-        self.session = model(engine).create_session()
+        self.model = model(engine)
+        self.session = self.model.create_session()
     @pyqtSlot()
     def _back_menu(self) :
         self.displayUi = Menuprincipal_child()
@@ -224,8 +230,10 @@ class Addcase_child(QMainWindow, Addcase):
             if (b3.isChecked()) :
                 b22 = b3.text()
             if (b4.isChecked()) :
-                b22 = b3.text()
-            self.save_case = Case(name_patient = name_patient, age_patient =age, gender_patient = b22, type_case =b11, desc_case= descr )
+                b22 = b4.text()
+            if self.save_case is None :
+                self.save_case = Case(name_patient = name_patient, age_patient =age, gender_patient = b22, type_case =b11, desc_case= descr )
+            self.infos =[name_patient, age, b22,b11, descr]
             if(self.child is None) :
                 self.child =Addsymptom_child(self)
                 self.displayUi = self.child
@@ -247,7 +255,9 @@ class Addsymptom_child(QMainWindow, Add_symptom):
         self.parent = parent
         self.child = None
         self.flag = False
+        self.updateID = []
         self.load_h = load_h
+        self.updatelen = 0
         self.error_dialog = QMessageBox()
         self.pushButton_3.clicked.connect(self._addRow)
         self.pushButton_4.clicked.connect(self._removeRow)
@@ -290,10 +300,40 @@ class Addsymptom_child(QMainWindow, Add_symptom):
                 self.error_dialog.setText("Remplissez tous les champs de la ligne " + str(row)+"\n Mettez N/A si non existant")
                 self.error_dialog.exec_()
             else :
-                for i in range(row):
-                        smp.append(Symptom(name_symptom = self.tableWidget.item(i,0).text(), desc_symptom= self.tableWidget.item(i,1).text(),
-                        type_symptom = self.tableWidget.item(i, 2).text(), val_symptom =self.tableWidget.item(i,3).text()))
-                self.parent.save_case.symptoms = smp
+                if self.updatelen <= 0:
+                    for i in range(row):                     
+                            smp.append(Symptom(name_symptom = self.tableWidget.item(i,0).text(), desc_symptom= self.tableWidget.item(i,1).text(),
+                            type_symptom = self.tableWidget.item(i, 2).text(), val_symptom =self.tableWidget.item(i,3).text()))
+                    self.parent.save_case.symptoms = smp
+                else :
+                    session = self.parent.session
+                   
+                    if row == self.updatelen :
+                        for i in range(row):
+                            session.query(Symptom).filter(Symptom.id == self.updateID[i]).update({Symptom.name_symptom : self.tableWidget.item(i,0).text(), Symptom.desc_symptom : self.tableWidget.item(i,1).text(),
+                                Symptom.type_symptom : self.tableWidget.item(i, 2).text(), Symptom.val_symptom  : self.tableWidget.item(i,3).text()})
+                            session.commit()
+                    if row < self.updatelen :
+                        for i in range(row):
+                            session.query(Symptom).filter(Symptom.id == self.updateID[i]).update({Symptom.name_symptom : self.tableWidget.item(i,0).text(), Symptom.desc_symptom : self.tableWidget.item(i,1).text(),
+                                Symptom.type_symptom : self.tableWidget.item(i, 2).text(), Symptom.val_symptom  : self.tableWidget.item(i,3).text()})
+                            session.commit()
+                        for j in range(row, self.updatelen):
+                            x = session.query(Symptom).get(self.updateID[j])
+                            session.delete(x)
+                            session.commit()                          
+                    if row > self.updatelen :
+                        for i in range(self.updatelen):
+                            session.query(Symptom).filter(Symptom.id == self.updateID[i]).update({Symptom.name_symptom : self.tableWidget.item(i,0).text(), Symptom.desc_symptom : self.tableWidget.item(i,1).text(),
+                                Symptom.type_symptom : self.tableWidget.item(i, 2).text(), Symptom.val_symptom  : self.tableWidget.item(i,3).text()})
+                            session.commit()
+                        for j in range(self.updatelen, row):
+                            col1, col2, col3, col4 = self.tableWidget.item(j, 0), self.tableWidget.item(j, 1), self.tableWidget.item(j, 2), self.tableWidget.item(j, 3)
+                            s = Symptom(name_symptom = self.tableWidget.item(i,0).text(), desc_symptom= self.tableWidget.item(i,1).text(),
+                                                type_symptom = self.tableWidget.item(i, 2).text(), val_symptom =self.tableWidget.item(i,3).text())
+                            s.case_id = self.parent.save_case.id 
+                            session.add(s)
+                            session.commit()                    
                 if(self.child is None) :
                     self.child = Hypothese_child(self)
                     self.displayUi = self.child          
@@ -321,12 +361,15 @@ class Hypothese_child(QMainWindow, Hypothese) :
     @pyqtSlot()
     def _save_case_final(self) :
         row =  self.tableWidget.rowCount()
+        n = len(self.save_hp2)
+        if not self.updateflag :
+            n = len(self.save_hp)
         if (row ==0) :
             self.error_dialog.setIcon(QMessageBox.Critical)
             self.error_dialog.setText("Veuillez formuler au moins une hypothèse avant de sauvegarder le cas")
             self.error_dialog.exec_()
         else :
-            if (len(self.save_hp2)<row):
+            if (n<row):
                 self.error_dialog.setIcon(QMessageBox.Critical)
                 self.error_dialog.setText("Veuillez terminer d'éditer toutes les hypothèses avant de sauvegarder le cas")
                 self.error_dialog.exec_()
@@ -341,10 +384,33 @@ class Hypothese_child(QMainWindow, Hypothese) :
                     session.add(case)
                     session.commit()
                 else :
-                    session.query(Case).filter(Case.id ==self.id_tosave).update({Case.name_patient:case.name_patient,Case.age_patient:case.age_patient,
-                                            Case.gender_patient:case.gender_patient, Case.type_case :case.type_case},synchronize_session=False)
-
+                    for elem in self.save_hp.keys() :
+                        if elem in self.hupdate.keys() :
+                            temp = self.hupdate[elem]
+                            hid =temp[0]
+                            actodo = temp[1]
+                            print(actodo)
+                            if actodo == "UPDATE" :
+                                index = temp[2]
+                                hcol1, hcol2, hcol3 = self.tableWidget.item(index, 0), self.tableWidget.cellWidget(index, 1), self.tableWidget.item(index, 2)      
+                                session.query(Hypothesis).filter(Hypothesis.id==hid).update({Hypothesis.name_hypothesis : hcol1.text(), Hypothesis.desc_hypothesis :hcol3.text(),
+                                         Hypothesis.true_false_hypothesis : true_false(hcol2.currentText())})
+                                session.commit()
+                            if actodo == "DELETE" :         
+                                x = session.query(Hypothesis).get(hid)
+                                session.delete(x)
+                                session.commit()
+                        else :
+                            hp = self.save_hp[elem]
+                            hp.case_id =case.id
+                            session.add(hp)
+                            session.commit()
+                    infos = self.sparent.parent.infos
+                    session.query(Case).filter(Case.id ==self.id_tosave).update({Case.name_patient:infos[0],Case.age_patient:infos[1],
+                                            Case.gender_patient:infos[2], Case.type_case : infos[3], Case.desc_case :infos[4]},synchronize_session=False)
+                    session.commit()
                 session.close()
+                self.sparent.parent.model.engine.dispose()
                 self.displayUi = Menuprincipal_child()
                 self.hide()
                 self.displayUi.show()
@@ -367,7 +433,12 @@ class Hypothese_child(QMainWindow, Hypothese) :
                 self.tableWidget.setCellWidget(i, 3, item4)
                 self.bl.append(item4)
                 self.load_p[self.bl[i]] = htable[i].protocol_list
+                self.save_hp[item4] = htable[i]
+                self.hupdate[item4] = [htable[i].id, 'UPDATE', i]
                 self.pchild_list[self.bl[i]] = Protocole_child(hparent=self, button= self.bl[i], flag=True)
+                self.pchild_list[self.bl[i]].numId = len(htable[i].protocol_list)
+                self.pchild_list[self.bl[i]].hid = row.id
+                self.pchild_list[self.bl[i]].prot_updateflag = False
                 self.bl[i].clicked.connect(self._go_protocole)
 
     @pyqtSlot()
@@ -425,6 +496,7 @@ class Protocole_child(QMainWindow, Protocole) :
         self.load_a = {}
         self.flag = flag
         self.flag2 = True
+        self.hid = 0
         self.pushButton.clicked.connect(self._back_hp)
         self.error_dialog = QMessageBox()
         self.pushButton_2.clicked.connect(self._save_protocols)
@@ -446,8 +518,10 @@ class Protocole_child(QMainWindow, Protocole) :
                 self.tableWidget.setItem(i, 2, item3)
                 self.tableWidget.setCellWidget(i, 3, item4)
                 self.action_list[self.ba[i]] = Action_child(self, self.ba[i])
+                self.action_list[self.ba[i]].update_create_flag = False
                 session = self.hparent.sparent.parent.session
                 uplets = session.query(Uplet).filter(Uplet.protocol_id==row.id).all()
+                self.prot_update[item4] = [row, "UPDATE", i]
                 f = []
                 for u in uplets :
                     r1 = session.query(Actor).join(Uplet).filter(Actor.id==u.actor_id).all()
@@ -456,6 +530,7 @@ class Protocole_child(QMainWindow, Protocole) :
                         p = [ac.name_action, ac.desc_action, r1[0].name, r1[0].role_actor, ac.precondition,ac.true_false_action, ac.order, ac.boucle_id, ac.id, r1[0].id, u.protocol_id]
                         f.append(p)
                 self.load_a[item4] = f
+                self.save_protocol[item4] = row
                 self.ba[i].clicked.connect(self._go_action) 
                 self.action_list[self.ba[i]].nId = len(f)
             self.flag2 = False
@@ -469,23 +544,49 @@ class Protocole_child(QMainWindow, Protocole) :
 
     @pyqtSlot()
     def _save_protocols(self):
-        if(len(self.uplets)==0):
+        n = 0
+        if self.prot_updateflag :
+            n =len(self.uplets)
+        else :
+            n = len(self.save_protocol)
+        if(n==0):
             self.error_dialog.setIcon(QMessageBox.Critical)
             self.error_dialog.setText("Ajouter et éditer au moins un protocole avant de sauvegarder")
             self.error_dialog.exec_()
         else :
-            if len(self.uplets) < self.tableWidget.rowCount() :
+            if n < self.tableWidget.rowCount() :
                 self.error_dialog.setIcon(QMessageBox.Critical)
                 self.error_dialog.setText("Veuillez terminer l'édition des actions de tous les protocoles ")
                 self.error_dialog.exec_()
             else :
-                for elem in self.uplets.keys() :
-                    self.hparent.save_hp[self.hbcreate].protocol_list.append(self.uplets[elem])
-                self.hparent.save_hp2[self.hbcreate] = self.hparent.save_hp[self.hbcreate]
+                if (not self.prot_updateflag) :
+                    session = self.hparent.sparent.parent.session
+                    for elem in self.prot_update.keys():
+                        if self.prot_update[elem][1]=="UPDATE":
+                            currentprot = self.prot_update[elem][0]
+                            row = self.prot_update[elem][2]
+                            p1,p2,p3 = self.tableWidget.item(row, 0), self.tableWidget.cellWidget(row, 1),self.tableWidget.item(row, 2)
+                            session.query(Protocol).filter(Protocol.id==currentprot.id).update({Protocol.name_protocol:p1.text(),
+                                Protocol.desc_protocol:p3.text(), Protocol.type_protocol : p2.currentText()})
+                            session.commit()         
+                        else :
+                            x = session.query(Protocol).get(self.prot_update[elem][0].id)
+                            session.delete(x) 
+                            session.commit()
+                    if len(self.uplets)>0 :
+                        for elem in self.uplets.keys():
+                            p = self.uplets[elem]
+                            p.hpothes_id = self.hid
+                            session.add(p)
+                            session.commit()
+                else:
+                    for elem in self.uplets.keys() :
+                        self.hparent.save_hp[self.hbcreate].protocol_list.append(self.uplets[elem])
+                    self.hparent.save_hp2[self.hbcreate] = self.hparent.save_hp[self.hbcreate]
                 self.displayUi = self.hparent
                 self.hide()
                 self.displayUi.show()
-    
+
     @pyqtSlot()
     def _go_action(self) :
         button = self.sender()
@@ -513,17 +614,20 @@ class Protocole_child(QMainWindow, Protocole) :
         if (row<=0) :
             super()._addRow()
             self.action_list[self.ba[row]] = Action_child(self, self.ba[row])
+            if (not self.prot_updateflag) :
+                self.action_list[self.ba[row]].update_create_flag = True
             self.ba[0].clicked.connect(self._go_action)
         else : 
             if(len(self.save_protocol)==row) :
                 super()._addRow()
                 self.action_list[self.ba[row]] = Action_child(self, self.ba[row])
+                if not self.prot_updateflag :
+                    self.action_list[self.ba[row]].update_create_flag = True
                 self.ba[row].clicked.connect(self._go_action)     
             else :
                 self.error_dialog.setIcon(QMessageBox.Critical)
                 self.error_dialog.setText("Veuillez terminer l'édition de la ligne " + str(row))
                 self.error_dialog.exec_()                   
-
 
 class Action_child(Actions, QMainWindow) :
     def __init__(self, pparent, button, flag = False):
@@ -534,12 +638,14 @@ class Action_child(Actions, QMainWindow) :
         self.bcreate = button
         self.flag = flag
         self.flag2 =  True
+        self.update_create_flag = True
         self.i = 0
         self.load_b = []
         self.nId = 0
         self.delete =[]
         self.update_flag_act =[]
         self.uplid =[]
+        self.counter= 0
         self.error_dialog =QMessageBox()
         self.pushButton.clicked.connect(self._back_protocole)
         self.pushButton_4.clicked.connect(self._add_boucle)
@@ -590,7 +696,7 @@ class Action_child(Actions, QMainWindow) :
         rowCount = self.tableWidget.rowCount()
         if (rowCount == 0):
             super()._add_action_row()
-            if ( not self.pparent.hparent.updateflag) :
+            if ( not self.update_create_flag) :
                 self.update_flag_act.append([0, "ADD"])
         else :
             item = self.tableWidget.item(rowCount-1, 0)
@@ -600,18 +706,16 @@ class Action_child(Actions, QMainWindow) :
                 self.error_dialog.exec_()
             else :
                 super()._add_action_row()
-                if (not self.pparent.hparent.updateflag) :
+                if (not self.update_create_flag) :
                     self.update_flag_act.append([rowCount, "ADD"])
     @pyqtSlot()
     def _removeRow(self):
         current = self.tableWidget.currentRow()
         row = self.tableWidget.rowCount()
-        print(self.pparent.hparent.flag)
         if (current==-1) :
             if  row > 0:
                 self.tableWidget.removeRow(row-1)
-                if(self.pparent.hparent.flag) :
-                    print(self.update_flag_act)
+                if( not self.update_create_flag) :
                     if self.nId>=row :
                         a =self.delete[row-1]
                         self.update_flag_act[row-1]= [a, row-1, "DELETE"]
@@ -620,13 +724,14 @@ class Action_child(Actions, QMainWindow) :
                         del self.update_flag_act[row-1]
                    
         else :
-            print(self.update_flag_act)
             self.tableWidget.removeRow(current) 
-            if(self.pparent.hparent.flag) :
+            if(not self.update_create_flag) :
                 if self.nId>=row :
-                    a =self.delete[current]
-                    self.update_flag_act[current] = [a, current, "DELETE"]
-                    self.delete.pop(current)
+                    if current <len(self.delete):
+                        a =self.delete[current]
+                        self.update_flag_act[current+self.counter] = [a, current, "DELETE"]
+                        self.delete.pop(current)
+                        self.counter +=1
                 else :
                     del self.update_flag_act[current]
  
@@ -734,8 +839,7 @@ class Action_child(Actions, QMainWindow) :
                 else :
                     act_all.append((Action(name_action =act[0], desc_action = act[1],true_false_action=true_false(act[5]), order = act[6], precondition = act[4]),[act[2],act[3]]))             
             if(len(act_all)==self.tableWidget.rowCount()) : 
-                if (not self.pparent.hparent.updateflag) :
-                    print(self.update_flag_act)
+                if (not self.update_create_flag) :
                     cop = self.update_flag_act.copy()
                     check = []
                     for elem in cop :
@@ -744,19 +848,33 @@ class Action_child(Actions, QMainWindow) :
                                 val = act_all[elem[1]]
                                 temp = val[0]
                                 temp2 =val[1]
-                                session.query(Action).filter(Action.id == elem[0]).update({Action.name_action :temp.name_action ,
-                                                        Action.desc_action : temp.desc_action ,Action.true_false_action :true_false(temp.true_false_action), Action.order : temp.order, Action.precondition : temp.precondition})
-                                session.query(Actor).filter(Actor.id==elem[3]).update({Actor.name :temp2[0], Actor.role_actor :temp2[1]})
-                                session.flush()
+                                session.query(Action).filter(Action.id == elem[0]).update({Action.name_action : temp.name_action ,
+                                                        Action.desc_action : temp.desc_action , Action.true_false_action :temp.true_false_action, Action.order : temp.order, Action.precondition : temp.precondition})
+                                a = session.query(Actor).get(elem[3])
+                                if (a.name != temp2[0])|(a.role_actor != temp2[1]) :
+                                    c = session.query(Action).filter(Action.id == elem[0]).all()
+                                    session.delete(session.query(Action).get(c[0].id))
+                                    u = Uplet()
+                                    u.u_veracity = temp.true_false_action
+                                    acc = Actor(name =temp2[0], role_actor =temp2[1])
+                                    u.action_all.append(temp)
+                                    u.protocol_id = self.uplid[0]
+                                    u.actors_all = acc
+                                    session.add(u)
+                                session.commit()
                                 self.update_flag_act.append([elem[0], elem[1],"UPDATE",elem[3]]) 
                                 check.append(elem[0])                                                    
                         if len(elem)==3 :
                             x = session.query(Action).get(elem[0]) 
+                            u = session.query(Uplet).get(x.uplet_id)
                             if (x is not None) :                  
-                                session.delete(x)
+                                if len(u.action_all)==1:
+                                    session.delete(u)
+                                else :
+                                    session.delete(x)
                                 session.commit()
                         if len(elem)==2:
-                            val = act_all[elem[0]-1]
+                            val = act_all[elem[0]]
                             temp = val[0]
                             temp2 =val[1]
                             p = self.uplid[0]
@@ -774,10 +892,22 @@ class Action_child(Actions, QMainWindow) :
                                 check.append(temp.id)                     
                             else :
                                 u = session.query(Uplet).filter((Uplet.protocol_id==p)&(Uplet.actor_id==x[0].id)).all()
-                                temp.uplet_id = u[0].id
-                                if (temp.true_false_action==0) :
-                                    session.query(Uplet).filter(Uplet.id == u[0].id).update({Uplet.u_veracity:0})  
-                                session.add(temp)
+                                print(u)
+                                if len(u)>0 :
+                                    temp.uplet_id = u[0].id
+                                    if (temp.true_false_action==0) :
+                                        session.query(Uplet).filter(Uplet.id == u[0].id).update({Uplet.u_veracity:0})
+                                    u[0].action_all.append(temp)
+                                    session.add(u[0])
+                                else :
+                                    u =  Uplet()
+                                    u.actors_all = x[0]
+                                    u.action_all.append(temp)
+                                    u.u_veracity = temp.true_false_action
+                                    u.protocol_id = p
+                                    print(u)
+                                    print(session)
+                                    session.add(u)
                                 session.flush()
                                 self.update_flag_act.append([temp.id, self.tableWidget.rowCount()-1,"UPDATE",x[0].id])
                                 check.append(temp.id) 
@@ -785,6 +915,7 @@ class Action_child(Actions, QMainWindow) :
                         self.update_flag_act.remove(elem)
                     self.delete = check.copy()
                     self.nId = self.tableWidget.rowCount()
+                    self.counter = 0
                 else :
                     if(self.bchild is not None) :
                         if (len(self.bchild.boucle)>0):
@@ -810,7 +941,6 @@ class Action_child(Actions, QMainWindow) :
                 self.displayUi = self.pparent
                 self.hide()
                 self.displayUi.show()
-
 
 class Boucle_child(QMainWindow, Boucle) :
     def __init__(self, parent):

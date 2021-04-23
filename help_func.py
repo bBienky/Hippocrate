@@ -23,6 +23,7 @@ def transform(l) :
     for i in range(1, len(l)) :
         s =s + ', '+ l[i]
     return s
+    
 def u_veracity_compute(l) :
     if (0 in l) :
         return 0
